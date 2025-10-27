@@ -396,48 +396,40 @@ st.caption("Professional CO₂ dragster physics simulation with advanced control
 if "history" not in st.session_state:
     st.session_state.history = []
 
-# Sidebar with expandable sections for organized controls
+# Sidebar - simple sections without expanders
 with st.sidebar:
-    st.header("⚙️ Controls")
+    st.markdown("### 🚗 Vehicle Design")
+    mass_g = st.slider("Mass (g)", 10, 100, 25, 1)
+    Cd = st.slider("Drag Coefficient", 0.2, 1.5, 0.65, 0.01)
+    area_cm2 = st.slider("Frontal Area (cm²)", 0.1, 5.0, 0.5, 0.05)
     
-    # Vehicle Design
-    with st.expander("🚗 Vehicle Design", expanded=False):
-        mass_g = st.slider("Mass (g)", 10, 100, 25, 1, help="Lighter = faster")
-        Cd = st.slider("Drag Coefficient", 0.2, 1.5, 0.65, 0.01, help="Lower = more aero")
-        area_cm2 = st.slider("Frontal Area (cm²)", 0.1, 5.0, 0.5, 0.05)
-        
-        st.markdown("**Wheels & Bearings**")
-        
-        wheel_diameter_mm = st.slider("Wheel Ø (mm)", 10, 40, 25, 1)
-        bearing_quality = st.slider("Bearing Quality", 1, 5, 2, 1, help="1=best, 5=worst")
-        wheel_friction = st.slider("Wheel Friction", 0.3, 3.0, 1.0, 0.1)
+    st.divider()
+    st.markdown("### 🛞 Wheels")
+    wheel_diameter_mm = st.slider("Wheel Ø (mm)", 10, 40, 25, 1)
+    bearing_quality = st.slider("Bearing Quality", 1, 5, 2, 1)
+    wheel_friction = st.slider("Friction", 0.3, 3.0, 1.0, 0.1)
     
-    # Propulsion
-    with st.expander("⚙️ CO₂ Propulsion", expanded=False):
-        co2_thrust = st.slider("Peak Thrust (N)", 2.0, 15.0, 8.0, 0.5)
-        co2_duration = st.slider("Duration (s)", 0.1, 0.8, 0.3, 0.05)
-        launch_technique = st.radio("Launch", 
-                                    ["Standard", "Quick", "Gradual"],
-                                    horizontal=True)
+    st.divider()
+    st.markdown("### ⚙️ CO₂ Propulsion")
+    co2_thrust = st.slider("Peak Thrust (N)", 2.0, 15.0, 8.0, 0.5)
+    co2_duration = st.slider("Duration (s)", 0.1, 0.8, 0.3, 0.05)
+    launch_technique = st.radio("Launch", ["Standard", "Quick", "Gradual"], horizontal=True)
     
-    # Track & Environment
-    with st.expander("🏁 Track & Environment", expanded=False):
-        track_length_m = st.slider("Track Length (m)", 5, 50, 20, 1)
-        surface = st.selectbox("Surface", ["Very Smooth", "Smooth", "Regular", "Bumpy"], index=2)
-        
-        st.markdown("**Environment**")
-        
-        temperature = st.slider("Temperature (°C)", -5.0, 45.0, 20.0, 1.0)
-        pressure = st.slider("Air Pressure (kPa)", 95.0, 106.0, 101.325, 0.5)
+    st.divider()
+    st.markdown("### 🏁 Track")
+    track_length_m = st.slider("Length (m)", 5, 50, 20, 1)
+    surface = st.selectbox("Surface", ["Very Smooth", "Smooth", "Regular", "Bumpy"], index=2)
+    temperature = st.slider("Temp (°C)", -5.0, 45.0, 20.0, 1.0)
+    pressure = st.slider("Pressure (kPa)", 95.0, 106.0, 101.325, 0.5)
     
-    # Advanced Settings
-    with st.expander("🔬 Advanced", expanded=False):
-        time_step = st.select_slider("Precision", [0.0001, 0.0005, 0.001, 0.002], value=0.001)
-        col1, col2 = st.columns(2)
-        with col1:
-            enable_drag = st.checkbox("Drag", value=True)
-        with col2:
-            enable_rolling = st.checkbox("Rolling", value=True)
+    st.divider()
+    st.markdown("### 🔬 Advanced")
+    time_step = st.select_slider("Precision", [0.0001, 0.0005, 0.001, 0.002], value=0.001)
+    col1, col2 = st.columns(2)
+    with col1:
+        enable_drag = st.checkbox("Drag", value=True)
+    with col2:
+        enable_rolling = st.checkbox("Rolling", value=True)
 
     st.markdown("---")
     col1, col2 = st.columns(2)
