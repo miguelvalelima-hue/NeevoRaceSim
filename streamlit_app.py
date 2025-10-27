@@ -396,7 +396,28 @@ st.caption("Professional CO₂ dragster physics simulation with advanced control
 if "history" not in st.session_state:
     st.session_state.history = []
 
-# Sidebar - two-level menu system
+# Initialize session state for persistent values
+if 'params' not in st.session_state:
+    st.session_state.params = {
+        'mass_g': 50,
+        'Cd': 0.5,
+        'area_cm2': 0.5,
+        'wheel_diameter_mm': 25,
+        'bearing_quality': 2,
+        'wheel_friction': 1.0,
+        'co2_thrust': 8.5,
+        'co2_duration': 0.35,
+        'launch_technique': "Standard",
+        'track_length_m': 20,
+        'surface': "Regular",
+        'temperature': 20.0,
+        'pressure': 101.325,
+        'time_step': 0.001,
+        'enable_drag': True,
+        'enable_rolling': True
+    }
+
+# Sidebar - two-level menu system with persistent values
 with st.sidebar:
     st.markdown("### ⚙️ Configuration")
     
@@ -412,77 +433,65 @@ with st.sidebar:
     # Show controls based on selected category
     if category == "🚗 Vehicle Design":
         st.markdown("#### Vehicle Design")
-        mass_g = st.slider("Mass (g)", 10, 100, 25, 1)
-        Cd = st.slider("Drag Coefficient", 0.2, 1.5, 0.65, 0.01)
-        area_cm2 = st.slider("Frontal Area (cm²)", 0.1, 5.0, 0.5, 0.05)
+        st.session_state.params['mass_g'] = st.slider("Mass (g)", 10, 100, st.session_state.params['mass_g'], 1)
+        st.session_state.params['Cd'] = st.slider("Drag Coefficient", 0.2, 0.8, st.session_state.params['Cd'], 0.01,
+                                                   help="0.5 is baseline - lower is better")
+        st.session_state.params['area_cm2'] = st.slider("Frontal Area (cm²)", 0.1, 5.0, st.session_state.params['area_cm2'], 0.05)
     
     elif category == "🛞 Wheels & Bearings":
         st.markdown("#### Wheels & Bearings")
-        wheel_diameter_mm = st.slider("Wheel Diameter (mm)", 10, 40, 25, 1)
-        bearing_quality = st.slider("Bearing Quality (1-5)", 1, 5, 2, 1)
-        wheel_friction = st.slider("Wheel Friction Multiplier", 0.3, 3.0, 1.0, 0.1)
+        st.session_state.params['wheel_diameter_mm'] = st.slider("Wheel Diameter (mm)", 10, 40, st.session_state.params['wheel_diameter_mm'], 1)
+        st.session_state.params['bearing_quality'] = st.slider("Bearing Quality (1-5)", 1, 5, st.session_state.params['bearing_quality'], 1)
+        st.session_state.params['wheel_friction'] = st.slider("Wheel Friction Multiplier", 0.3, 3.0, st.session_state.params['wheel_friction'], 0.1)
     
     elif category == "⚙️ CO₂ Propulsion":
         st.markdown("#### CO₂ Propulsion System")
-        co2_thrust = st.slider("Peak Thrust @ 20°C (N)", 2.0, 15.0, 8.0, 0.5)
-        co2_duration = st.slider("CO₂ Release Duration (s)", 0.1, 0.8, 0.3, 0.05)
-        launch_technique = st.radio("Launch Technique", 
+        st.session_state.params['co2_thrust'] = st.slider("Peak Thrust @ 20°C (N)", 2.0, 15.0, st.session_state.params['co2_thrust'], 0.1)
+        st.session_state.params['co2_duration'] = st.slider("CO₂ Release Duration (s)", 0.1, 0.8, st.session_state.params['co2_duration'], 0.01)
+        st.session_state.params['launch_technique'] = st.radio("Launch Technique", 
                                     ["Standard", "Quick Release", "Gradual Release"],
+                                    index=["Standard", "Quick Release", "Gradual Release"].index(st.session_state.params['launch_technique']),
                                     horizontal=True)
     
     elif category == "🏁 Track & Environment":
         st.markdown("#### Track & Environment")
-        track_length_m = st.slider("Track Length (m)", 5, 50, 20, 1)
-        surface = st.selectbox("Track Surface", ["Very Smooth", "Smooth", "Regular", "Bumpy"], index=2)
+        st.session_state.params['track_length_m'] = st.slider("Track Length (m)", 5, 50, st.session_state.params['track_length_m'], 1)
+        st.session_state.params['surface'] = st.selectbox("Track Surface", 
+                                                          ["Very Smooth", "Smooth", "Regular", "Bumpy"], 
+                                                          index=["Very Smooth", "Smooth", "Regular", "Bumpy"].index(st.session_state.params['surface']))
         
         st.markdown("**Environmental Conditions**")
-        temperature = st.slider("Temperature (°C)", -5.0, 45.0, 20.0, 1.0)
-        pressure = st.slider("Air Pressure (kPa)", 95.0, 106.0, 101.325, 0.5)
+        st.session_state.params['temperature'] = st.slider("Temperature (°C)", -5.0, 45.0, st.session_state.params['temperature'], 1.0)
+        st.session_state.params['pressure'] = st.slider("Air Pressure (kPa)", 95.0, 106.0, st.session_state.params['pressure'], 0.5)
     
     elif category == "🔬 Advanced Settings":
         st.markdown("#### Advanced Settings")
-        time_step = st.select_slider("Simulation Precision", 
+        st.session_state.params['time_step'] = st.select_slider("Simulation Precision", 
                                      [0.0001, 0.0005, 0.001, 0.002], 
-                                     value=0.001)
+                                     value=st.session_state.params['time_step'])
         col1, col2 = st.columns(2)
         with col1:
-            enable_drag = st.checkbox("Enable Drag", value=True)
+            st.session_state.params['enable_drag'] = st.checkbox("Enable Drag", value=st.session_state.params['enable_drag'])
         with col2:
-            enable_rolling = st.checkbox("Enable Rolling", value=True)
+            st.session_state.params['enable_rolling'] = st.checkbox("Enable Rolling", value=st.session_state.params['enable_rolling'])
     
-    # Initialize variables that might not be set if user hasn't visited that category
-    if 'mass_g' not in locals():
-        mass_g = 25
-    if 'Cd' not in locals():
-        Cd = 0.65
-    if 'area_cm2' not in locals():
-        area_cm2 = 0.5
-    if 'wheel_diameter_mm' not in locals():
-        wheel_diameter_mm = 25
-    if 'bearing_quality' not in locals():
-        bearing_quality = 2
-    if 'wheel_friction' not in locals():
-        wheel_friction = 1.0
-    if 'co2_thrust' not in locals():
-        co2_thrust = 8.0
-    if 'co2_duration' not in locals():
-        co2_duration = 0.3
-    if 'launch_technique' not in locals():
-        launch_technique = "Standard"
-    if 'track_length_m' not in locals():
-        track_length_m = 20
-    if 'surface' not in locals():
-        surface = "Regular"
-    if 'temperature' not in locals():
-        temperature = 20.0
-    if 'pressure' not in locals():
-        pressure = 101.325
-    if 'time_step' not in locals():
-        time_step = 0.001
-    if 'enable_drag' not in locals():
-        enable_drag = True
-    if 'enable_rolling' not in locals():
-        enable_rolling = True
+    # Extract values from session state
+    mass_g = st.session_state.params['mass_g']
+    Cd = st.session_state.params['Cd']
+    area_cm2 = st.session_state.params['area_cm2']
+    wheel_diameter_mm = st.session_state.params['wheel_diameter_mm']
+    bearing_quality = st.session_state.params['bearing_quality']
+    wheel_friction = st.session_state.params['wheel_friction']
+    co2_thrust = st.session_state.params['co2_thrust']
+    co2_duration = st.session_state.params['co2_duration']
+    launch_technique = st.session_state.params['launch_technique']
+    track_length_m = st.session_state.params['track_length_m']
+    surface = st.session_state.params['surface']
+    temperature = st.session_state.params['temperature']
+    pressure = st.session_state.params['pressure']
+    time_step = st.session_state.params['time_step']
+    enable_drag = st.session_state.params['enable_drag']
+    enable_rolling = st.session_state.params['enable_rolling']
 
     st.markdown("---")
     col1, col2 = st.columns(2)
