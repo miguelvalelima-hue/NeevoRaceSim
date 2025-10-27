@@ -253,52 +253,58 @@ def build_plotly_time_series(rows):
         font=dict(size=14, family='Aileron, sans-serif', color='#222222'),
         title_font=dict(family='Museo Moderno, sans-serif', size=18, color='#222222'),
         paper_bgcolor='#f1f0e6',
-        plot_bgcolor='#f1f0e6'
+        plot_bgcolor='white'
     )
     
-    # 2. Force Breakdown
+    # 2. Force Breakdown - Normalized view
     fig_forces = go.Figure()
     
     # Sample for cleaner visualization
-    sample_df = df.iloc[::10].copy()
+    sample_df = df.iloc[::20].copy()
     
-    fig_forces.add_trace(go.Bar(
+    # Show forces as percentages of total force for better visualization
+    total_force = sample_df["F_thrust"] + sample_df["F_drag"] + sample_df["F_rolling"] + sample_df["F_bearing"]
+    
+    fig_forces.add_trace(go.Scatter(
         x=sample_df["t"],
         y=sample_df["F_thrust"],
+        mode="lines",
         name="CO₂ Thrust",
-        marker_color='#FF8C00',
-        text=sample_df["F_thrust"].round(1),
-        textposition='inside'
+        line=dict(color='#FF8C00', width=3),
+        fill='tozeroy',
+        fillcolor='rgba(255, 140, 0, 0.2)'
     ))
-    fig_forces.add_trace(go.Bar(
+    fig_forces.add_trace(go.Scatter(
         x=sample_df["t"],
-        y=-sample_df["F_drag"],
-        name="Drag (resistance)",
-        marker_color='#222222',
-        text=sample_df["F_drag"].round(1),
-        textposition='inside'
+        y=sample_df["F_drag"],
+        mode="lines",
+        name="Drag Force",
+        line=dict(color='#E74C3C', width=2),
+        fill='tozeroy',
+        fillcolor='rgba(231, 76, 60, 0.2)'
     ))
-    fig_forces.add_trace(go.Bar(
+    fig_forces.add_trace(go.Scatter(
         x=sample_df["t"],
-        y=-(sample_df["F_rolling"] + sample_df["F_bearing"]),
+        y=sample_df["F_rolling"] + sample_df["F_bearing"],
+        mode="lines",
         name="Rolling + Bearing",
-        marker_color='#888888',
-        text=(sample_df["F_rolling"] + sample_df["F_bearing"]).round(1),
-        textposition='inside'
+        line=dict(color='#888888', width=2),
+        fill='tozeroy',
+        fillcolor='rgba(136, 136, 136, 0.2)'
     ))
     
     fig_forces.update_layout(
-        title="<b>Force Breakdown: Thrust vs Resistance</b>",
+        title="<b>Force Breakdown Over Time</b>",
         xaxis_title="Time (s)",
-        yaxis_title="Force (N) - Orange=Forward, Dark=Backward",
-        barmode='relative',
+        yaxis_title="Force (N)",
         height=400,
         template='plotly_white',
         font=dict(size=14, family='Aileron, sans-serif', color='#222222'),
         title_font=dict(family='Museo Moderno, sans-serif', size=18, color='#222222'),
         hovermode='x unified',
         paper_bgcolor='#f1f0e6',
-        plot_bgcolor='#f1f0e6'
+        plot_bgcolor='white',
+        legend=dict(x=0.7, y=0.98)
     )
     
     # 3. Speed vs Distance
@@ -319,7 +325,7 @@ def build_plotly_time_series(rows):
         font=dict(size=14, family='Aileron, sans-serif', color='#222222'),
         title_font=dict(family='Museo Moderno, sans-serif', size=18, color='#222222'),
         paper_bgcolor='#f1f0e6',
-        plot_bgcolor='#f1f0e6'
+        plot_bgcolor='white'
     )
     
     # 4. Acceleration Profile
@@ -344,7 +350,7 @@ def build_plotly_time_series(rows):
         font=dict(size=14, family='Aileron, sans-serif', color='#222222'),
         title_font=dict(family='Museo Moderno, sans-serif', size=18, color='#222222'),
         paper_bgcolor='#f1f0e6',
-        plot_bgcolor='#f1f0e6'
+        plot_bgcolor='white'
     )
     
     # 5. CO₂ Thrust Profile
@@ -367,7 +373,7 @@ def build_plotly_time_series(rows):
         font=dict(size=14, family='Aileron, sans-serif', color='#222222'),
         title_font=dict(family='Museo Moderno, sans-serif', size=18, color='#222222'),
         paper_bgcolor='#f1f0e6',
-        plot_bgcolor='#f1f0e6'
+        plot_bgcolor='white'
     )
 
     return fig_speed, fig_forces, fig_speed_dist, fig_accel, fig_thrust, df
@@ -392,41 +398,46 @@ if "history" not in st.session_state:
 
 # Sidebar with expandable sections for organized controls
 with st.sidebar:
-    st.header("⚙️ Simulation Controls")
+    st.header("⚙️ Controls")
     
     # Vehicle Design
-    with st.expander("🚗 VEHICLE DESIGN", expanded=True):
-        mass_g = st.slider("Mass (g)", 10, 100, 25, 1)
-        Cd = st.slider("Drag Coefficient", 0.2, 1.5, 0.65, 0.01)
+    with st.expander("🚗 Vehicle Design", expanded=False):
+        mass_g = st.slider("Mass (g)", 10, 100, 25, 1, help="Lighter = faster")
+        Cd = st.slider("Drag Coefficient", 0.2, 1.5, 0.65, 0.01, help="Lower = more aero")
         area_cm2 = st.slider("Frontal Area (cm²)", 0.1, 5.0, 0.5, 0.05)
-    
-    # Wheels & Friction
-    with st.expander("🛞 WHEELS & FRICTION", expanded=False):
-        wheel_diameter_mm = st.slider("Wheel Diameter (mm)", 10, 40, 25, 1)
-        bearing_quality = st.slider("Bearing Quality (1-5)", 1, 5, 2, 1)
-        wheel_friction = st.slider("Friction Multiplier", 0.3, 3.0, 1.0, 0.1)
+        
+        st.markdown("**Wheels & Bearings**")
+        
+        wheel_diameter_mm = st.slider("Wheel Ø (mm)", 10, 40, 25, 1)
+        bearing_quality = st.slider("Bearing Quality", 1, 5, 2, 1, help="1=best, 5=worst")
+        wheel_friction = st.slider("Wheel Friction", 0.3, 3.0, 1.0, 0.1)
     
     # Propulsion
-    with st.expander("⚙️ CO₂ PROPULSION", expanded=True):
-        co2_thrust = st.slider("Peak Thrust @ 20°C (N)", 2.0, 15.0, 8.0, 0.5)
-        co2_duration = st.slider("Release Duration (s)", 0.1, 0.8, 0.3, 0.05)
-        launch_technique = st.selectbox("Launch Technique", 
-                                       ["Standard", "Quick Release", "Gradual Release"])
+    with st.expander("⚙️ CO₂ Propulsion", expanded=False):
+        co2_thrust = st.slider("Peak Thrust (N)", 2.0, 15.0, 8.0, 0.5)
+        co2_duration = st.slider("Duration (s)", 0.1, 0.8, 0.3, 0.05)
+        launch_technique = st.radio("Launch", 
+                                    ["Standard", "Quick", "Gradual"],
+                                    horizontal=True)
     
     # Track & Environment
-    with st.expander("🏁 TRACK & ENVIRONMENT", expanded=True):
+    with st.expander("🏁 Track & Environment", expanded=False):
         track_length_m = st.slider("Track Length (m)", 5, 50, 20, 1)
-        surface = st.selectbox("Surface", 
-                              ["Very Smooth", "Smooth", "Regular", "Bumpy"], index=2)
+        surface = st.selectbox("Surface", ["Very Smooth", "Smooth", "Regular", "Bumpy"], index=2)
+        
+        st.markdown("**Environment**")
+        
         temperature = st.slider("Temperature (°C)", -5.0, 45.0, 20.0, 1.0)
         pressure = st.slider("Air Pressure (kPa)", 95.0, 106.0, 101.325, 0.5)
     
     # Advanced Settings
-    with st.expander("🔬 ADVANCED", expanded=False):
-        time_step = st.select_slider("Precision", 
-                                     [0.0001, 0.0005, 0.001, 0.002, 0.005], value=0.001)
-        enable_drag = st.checkbox("Enable Drag", value=True)
-        enable_rolling = st.checkbox("Enable Rolling", value=True)
+    with st.expander("🔬 Advanced", expanded=False):
+        time_step = st.select_slider("Precision", [0.0001, 0.0005, 0.001, 0.002], value=0.001)
+        col1, col2 = st.columns(2)
+        with col1:
+            enable_drag = st.checkbox("Drag", value=True)
+        with col2:
+            enable_rolling = st.checkbox("Rolling", value=True)
 
     st.markdown("---")
     col1, col2 = st.columns(2)
