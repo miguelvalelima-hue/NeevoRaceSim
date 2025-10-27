@@ -396,40 +396,93 @@ st.caption("Professional CO₂ dragster physics simulation with advanced control
 if "history" not in st.session_state:
     st.session_state.history = []
 
-# Sidebar - simple sections without expanders
+# Sidebar - two-level menu system
 with st.sidebar:
-    st.markdown("### 🚗 Vehicle Design")
-    mass_g = st.slider("Mass (g)", 10, 100, 25, 1)
-    Cd = st.slider("Drag Coefficient", 0.2, 1.5, 0.65, 0.01)
-    area_cm2 = st.slider("Frontal Area (cm²)", 0.1, 5.0, 0.5, 0.05)
+    st.markdown("### ⚙️ Configuration")
+    
+    # Main category selector
+    category = st.selectbox(
+        "Select Category",
+        ["🚗 Vehicle Design", "🛞 Wheels & Bearings", "⚙️ CO₂ Propulsion", "🏁 Track & Environment", "🔬 Advanced Settings"],
+        label_visibility="collapsed"
+    )
     
     st.divider()
-    st.markdown("### 🛞 Wheels")
-    wheel_diameter_mm = st.slider("Wheel Ø (mm)", 10, 40, 25, 1)
-    bearing_quality = st.slider("Bearing Quality", 1, 5, 2, 1)
-    wheel_friction = st.slider("Friction", 0.3, 3.0, 1.0, 0.1)
     
-    st.divider()
-    st.markdown("### ⚙️ CO₂ Propulsion")
-    co2_thrust = st.slider("Peak Thrust (N)", 2.0, 15.0, 8.0, 0.5)
-    co2_duration = st.slider("Duration (s)", 0.1, 0.8, 0.3, 0.05)
-    launch_technique = st.radio("Launch", ["Standard", "Quick", "Gradual"], horizontal=True)
+    # Show controls based on selected category
+    if category == "🚗 Vehicle Design":
+        st.markdown("#### Vehicle Design")
+        mass_g = st.slider("Mass (g)", 10, 100, 25, 1)
+        Cd = st.slider("Drag Coefficient", 0.2, 1.5, 0.65, 0.01)
+        area_cm2 = st.slider("Frontal Area (cm²)", 0.1, 5.0, 0.5, 0.05)
     
-    st.divider()
-    st.markdown("### 🏁 Track")
-    track_length_m = st.slider("Length (m)", 5, 50, 20, 1)
-    surface = st.selectbox("Surface", ["Very Smooth", "Smooth", "Regular", "Bumpy"], index=2)
-    temperature = st.slider("Temp (°C)", -5.0, 45.0, 20.0, 1.0)
-    pressure = st.slider("Pressure (kPa)", 95.0, 106.0, 101.325, 0.5)
+    elif category == "🛞 Wheels & Bearings":
+        st.markdown("#### Wheels & Bearings")
+        wheel_diameter_mm = st.slider("Wheel Diameter (mm)", 10, 40, 25, 1)
+        bearing_quality = st.slider("Bearing Quality (1-5)", 1, 5, 2, 1)
+        wheel_friction = st.slider("Wheel Friction Multiplier", 0.3, 3.0, 1.0, 0.1)
     
-    st.divider()
-    st.markdown("### 🔬 Advanced")
-    time_step = st.select_slider("Precision", [0.0001, 0.0005, 0.001, 0.002], value=0.001)
-    col1, col2 = st.columns(2)
-    with col1:
-        enable_drag = st.checkbox("Drag", value=True)
-    with col2:
-        enable_rolling = st.checkbox("Rolling", value=True)
+    elif category == "⚙️ CO₂ Propulsion":
+        st.markdown("#### CO₂ Propulsion System")
+        co2_thrust = st.slider("Peak Thrust @ 20°C (N)", 2.0, 15.0, 8.0, 0.5)
+        co2_duration = st.slider("CO₂ Release Duration (s)", 0.1, 0.8, 0.3, 0.05)
+        launch_technique = st.radio("Launch Technique", 
+                                    ["Standard", "Quick Release", "Gradual Release"],
+                                    horizontal=True)
+    
+    elif category == "🏁 Track & Environment":
+        st.markdown("#### Track & Environment")
+        track_length_m = st.slider("Track Length (m)", 5, 50, 20, 1)
+        surface = st.selectbox("Track Surface", ["Very Smooth", "Smooth", "Regular", "Bumpy"], index=2)
+        
+        st.markdown("**Environmental Conditions**")
+        temperature = st.slider("Temperature (°C)", -5.0, 45.0, 20.0, 1.0)
+        pressure = st.slider("Air Pressure (kPa)", 95.0, 106.0, 101.325, 0.5)
+    
+    elif category == "🔬 Advanced Settings":
+        st.markdown("#### Advanced Settings")
+        time_step = st.select_slider("Simulation Precision", 
+                                     [0.0001, 0.0005, 0.001, 0.002], 
+                                     value=0.001)
+        col1, col2 = st.columns(2)
+        with col1:
+            enable_drag = st.checkbox("Enable Drag", value=True)
+        with col2:
+            enable_rolling = st.checkbox("Enable Rolling", value=True)
+    
+    # Initialize variables that might not be set if user hasn't visited that category
+    if 'mass_g' not in locals():
+        mass_g = 25
+    if 'Cd' not in locals():
+        Cd = 0.65
+    if 'area_cm2' not in locals():
+        area_cm2 = 0.5
+    if 'wheel_diameter_mm' not in locals():
+        wheel_diameter_mm = 25
+    if 'bearing_quality' not in locals():
+        bearing_quality = 2
+    if 'wheel_friction' not in locals():
+        wheel_friction = 1.0
+    if 'co2_thrust' not in locals():
+        co2_thrust = 8.0
+    if 'co2_duration' not in locals():
+        co2_duration = 0.3
+    if 'launch_technique' not in locals():
+        launch_technique = "Standard"
+    if 'track_length_m' not in locals():
+        track_length_m = 20
+    if 'surface' not in locals():
+        surface = "Regular"
+    if 'temperature' not in locals():
+        temperature = 20.0
+    if 'pressure' not in locals():
+        pressure = 101.325
+    if 'time_step' not in locals():
+        time_step = 0.001
+    if 'enable_drag' not in locals():
+        enable_drag = True
+    if 'enable_rolling' not in locals():
+        enable_rolling = True
 
     st.markdown("---")
     col1, col2 = st.columns(2)
