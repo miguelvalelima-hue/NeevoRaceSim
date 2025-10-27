@@ -674,4 +674,89 @@ with st.expander("📊 Compare Two Configurations"):
                     st.metric(f"Time Difference", f"{abs(time_diff):.3f}s", 
                              delta=f"{time_diff:.3f}s" if time_diff != 0 else "Same")
                 with comp_result_col2:
-                    speed_diff = r2_data['results']['top_speed'] - r1_data['results']['
+                    speed_diff = r2_data['results']['top_speed'] - r1_data['results']['top_speed']
+                    st.metric(f"Speed Difference", f"{abs(speed_diff):.1f} km/h", 
+                             delta=f"{speed_diff:.1f} km/h" if speed_diff != 0 else "Same")
+                with comp_result_col3:
+                    st.write(f"**Run 1:** {r1_data['results']['finish_time']:.3f}s")
+                    st.write(f"**Run 2:** {r2_data['results']['finish_time']:.3f}s")
+
+# Export
+st.markdown("---")
+st.markdown("### 💾 Export Data")
+
+if df is not None and not df.empty:
+    csv_bytes = csv_bytes_from_df(df)
+    st.download_button(
+        "📥 Download Run Data (CSV)", 
+        data=csv_bytes, 
+        file_name=f"neevo_run_{int(datetime.now().timestamp())}.csv", 
+        mime="text/csv"
+    )
+
+# Save to history
+if st.session_state.get("save_run", False):
+    st.session_state.save_run = False
+    run_snapshot = {
+        "id": int(datetime.now().timestamp() * 1000),
+        "label": f"Run {len(st.session_state.history)+1}",
+        "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "params": {
+            "mass_g": mass_g,
+            "Cd": Cd,
+            "area_cm2": area_cm2,
+            "wheel_friction": wheel_friction,
+            "wheel_diameter_mm": wheel_diameter_mm,
+            "bearing_quality": bearing_quality,
+            "temperature": temperature,
+            "co2_thrust": co2_thrust,
+            "co2_duration": co2_duration,
+            "launch_technique": launch_technique,
+            "actual_thrust": actual_thrust,
+            "surface": surface,
+            "Crr": Crr
+        },
+        "results": {
+            "finish_time": finish_time,
+            "top_speed": float(top_speed) if top_speed else None,
+            "avg_speed": float(avg_speed) if avg_speed else None
+        }
+    }
+    st.session_state.history.insert(0, run_snapshot)
+    st.success("✅ Run saved to history!")
+
+# History display
+if st.session_state.history:
+    st.markdown("---")
+    st.markdown("### 📜 Run History")
+    
+    for run in st.session_state.history[:5]:
+        with st.expander(f"**{run['label']}** — {run['date']} — ⏱️ {run['results']['finish_time']:.3f}s — 🚀 {run['results']['top_speed']:.1f} km/h"):
+            h_col1, h_col2, h_col3 = st.columns(3)
+            
+            with h_col1:
+                st.write("**Vehicle:**")
+                st.write(f"Mass: {run['params']['mass_g']}g")
+                st.write(f"Cd: {run['params']['Cd']:.3f}")
+                st.write(f"Area: {run['params']['area_cm2']}cm²")
+                st.write(f"Wheel Ø: {run['params']['wheel_diameter_mm']}mm")
+            
+            with h_col2:
+                st.write("**Propulsion:**")
+                st.write(f"CO₂ Thrust: {run['params']['co2_thrust']:.1f}N")
+                st.write(f"Duration: {run['params']['co2_duration']:.2f}s")
+                st.write(f"Launch: {run['params']['launch_technique']}")
+                st.write(f"Temp: {run['params']['temperature']}°C")
+            
+            with h_col3:
+                st.write("**Results:**")
+                st.write(f"Finish: {run['results']['finish_time']:.3f}s")
+                st.write(f"Top: {run['results']['top_speed']:.1f} km/h")
+                st.write(f"Avg: {run['results']['avg_speed']:.1f} km/h")
+            
+            if st.button(f"🗑️ Delete Run", key=f"del_{run['id']}"):
+                st.session_state.history.remove(run)
+                st.rerun()
+
+st.markdown("---")
+st.caption("© Neevo STEM Racing Simulator | Advanced F1 in Schools Physics Simulation")
