@@ -390,82 +390,43 @@ st.caption("Professional CO₂ dragster physics simulation with advanced control
 if "history" not in st.session_state:
     st.session_state.history = []
 
-# Sidebar with tabs for organized controls
+# Sidebar with expandable sections for organized controls
 with st.sidebar:
     st.header("⚙️ Simulation Controls")
     
-    tab1, tab2, tab3, tab4 = st.tabs(["🚗 Vehicle", "⚙️ Propulsion", "🏁 Track", "🔬 Advanced"])
+    # Vehicle Design
+    with st.expander("🚗 VEHICLE DESIGN", expanded=True):
+        mass_g = st.slider("Mass (g)", 10, 100, 25, 1)
+        Cd = st.slider("Drag Coefficient", 0.2, 1.5, 0.65, 0.01)
+        area_cm2 = st.slider("Frontal Area (cm²)", 0.1, 5.0, 0.5, 0.05)
     
-    with tab1:
-        st.subheader("Vehicle Design")
-        mass_g = st.slider("Mass (g)", min_value=10, max_value=100, value=25, step=1,
-                           help="Lighter = faster acceleration")
-        
-        Cd = st.slider("Drag Coefficient (Cd)", min_value=0.2, max_value=1.5, value=0.65, step=0.01,
-                       help="Lower = more aerodynamic. F1 in Schools: 0.3-0.8")
-        
-        area_cm2 = st.slider("Frontal Area (cm²)", min_value=0.1, max_value=5.0, value=0.5, step=0.05,
-                            help="Smaller area = less drag")
-        
-        st.markdown("---")
-        st.subheader("Wheels & Bearings")
-        
-        wheel_diameter_mm = st.slider("Wheel Diameter (mm)", min_value=10, max_value=40, value=25, step=1,
-                                      help="Affects rolling resistance")
-        
-        bearing_quality = st.slider("Bearing Quality", min_value=1, max_value=5, value=2, step=1,
-                                   help="1=excellent ceramic | 5=poor quality")
-        
-        wheel_friction = st.slider("Wheel Friction Multiplier", min_value=0.3, max_value=3.0, value=1.0, step=0.1,
-                                   help="0.5=excellent | 1.0=standard | 2.0=poor")
+    # Wheels & Friction
+    with st.expander("🛞 WHEELS & FRICTION", expanded=False):
+        wheel_diameter_mm = st.slider("Wheel Diameter (mm)", 10, 40, 25, 1)
+        bearing_quality = st.slider("Bearing Quality (1-5)", 1, 5, 2, 1)
+        wheel_friction = st.slider("Friction Multiplier", 0.3, 3.0, 1.0, 0.1)
     
-    with tab2:
-        st.subheader("CO₂ Propulsion System")
-        
-        co2_thrust = st.slider("CO₂ Peak Thrust @ 20°C (N)", min_value=2.0, max_value=15.0, value=8.0, step=0.5,
-                               help="Peak thrust force. Typical: 6-10N")
-        
-        co2_duration = st.slider("CO₂ Release Duration (s)", min_value=0.1, max_value=0.8, value=0.3, step=0.05,
-                                help="How long the cartridge fires")
-        
+    # Propulsion
+    with st.expander("⚙️ CO₂ PROPULSION", expanded=True):
+        co2_thrust = st.slider("Peak Thrust @ 20°C (N)", 2.0, 15.0, 8.0, 0.5)
+        co2_duration = st.slider("Release Duration (s)", 0.1, 0.8, 0.3, 0.05)
         launch_technique = st.selectbox("Launch Technique", 
-                                       options=["Standard", "Quick Release", "Gradual Release"],
-                                       help="Affects thrust profile shape")
-        
-        st.info(f"💡 **{launch_technique}** technique selected")
+                                       ["Standard", "Quick Release", "Gradual Release"])
     
-    with tab3:
-        st.subheader("Track Conditions")
-        
-        track_length_m = st.slider("Track Length (m)", min_value=5, max_value=50, value=20, step=1,
-                                   help="Standard F1 in Schools: 20m")
-        
-        surface = st.selectbox("Track Surface Type", 
-                              options=["Very Smooth", "Smooth", "Regular", "Bumpy"],
-                              index=2,
-                              help="Surface affects rolling resistance")
-        
-        st.markdown("---")
-        st.subheader("Environmental Conditions")
-        
-        temperature = st.slider("Temperature (°C)", min_value=-5.0, max_value=45.0, value=20.0, step=1.0,
-                               help="🔥 HOTTER = MORE thrust | ❄️ COLDER = LESS thrust")
-        
-        pressure = st.slider("Air Pressure (kPa)", min_value=95.0, max_value=106.0, value=101.325, step=0.5,
-                            help="Higher = denser air = MORE drag")
+    # Track & Environment
+    with st.expander("🏁 TRACK & ENVIRONMENT", expanded=True):
+        track_length_m = st.slider("Track Length (m)", 5, 50, 20, 1)
+        surface = st.selectbox("Surface", 
+                              ["Very Smooth", "Smooth", "Regular", "Bumpy"], index=2)
+        temperature = st.slider("Temperature (°C)", -5.0, 45.0, 20.0, 1.0)
+        pressure = st.slider("Air Pressure (kPa)", 95.0, 106.0, 101.325, 0.5)
     
-    with tab4:
-        st.subheader("Advanced Physics")
-        
-        time_step = st.select_slider("Simulation Precision", 
-                                     options=[0.0001, 0.0005, 0.001, 0.002, 0.005],
-                                     value=0.001,
-                                     help="Smaller = more accurate but slower")
-        
-        enable_drag = st.checkbox("Enable Aerodynamic Drag", value=True)
-        enable_rolling = st.checkbox("Enable Rolling Resistance", value=True)
-        
-        st.info("ℹ️ Disable forces for debugging only")
+    # Advanced Settings
+    with st.expander("🔬 ADVANCED", expanded=False):
+        time_step = st.select_slider("Precision", 
+                                     [0.0001, 0.0005, 0.001, 0.002, 0.005], value=0.001)
+        enable_drag = st.checkbox("Enable Drag", value=True)
+        enable_rolling = st.checkbox("Enable Rolling", value=True)
 
     st.markdown("---")
     col1, col2 = st.columns(2)
