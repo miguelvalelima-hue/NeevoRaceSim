@@ -380,9 +380,143 @@ def build_plotly_time_series(rows):
 
 # ---------- Export helpers ----------
 
-def csv_bytes_from_df(df):
+def csv_bytes_from_df(df, params_dict, finish_time):
+    """
+    Create a comprehensive, professional Excel-style CSV with calculated metrics
+    """
     buffer = io.StringIO()
-    df.to_csv(buffer, index=False)
+    
+    # Header Section
+    buffer.write("NEEVO - F1 IN SCHOOLS RACE SIMULATION REPORT\n")
+    buffer.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+    buffer.write("=" * 80 + "\n\n")
+    
+    # Performance Summary
+    buffer.write("PERFORMANCE SUMMARY\n")
+    buffer.write("-" * 80 + "\n")
+    buffer.write(f"Finish Time,{finish_time:.4f} s\n")
+    buffer.write(f"Top Speed,{df['speed_kmh'].max():.2f} km/h\n")
+    buffer.write(f"Average Speed,{df['speed_kmh'].mean():.2f} km/h\n")
+    buffer.write(f"Peak Acceleration,{df['a'].max():.2f} m/s² ({df['a'].max()/9.81:.2f} G)\n")
+    buffer.write(f"Final Speed,{df['speed_kmh'].iloc[-1]:.2f} km/h\n")
+    
+    # Split Times
+    buffer.write("\nSPLIT TIMES\n")
+    buffer.write("-" * 80 + "\n")
+    buffer.write("Distance,Time,Speed at Split\n")
+    for distance in [5, 10, 15, 20]:
+        if distance <= df['x'].max():
+            split_data = df[df['x'] >= distance].iloc[0]
+            buffer.write(f"{distance}m,{split_data['t']:.3f}s,{split_data['speed_kmh']:.1f} km/h\n")
+    
+    # Acceleration Zones
+    buffer.write("\nACCELERATION ANALYSIS\n")
+    buffer.write("-" * 80 + "\n")
+    buffer.write("Phase,Distance Range,Time Range,Avg Acceleration\n")
+    
+    # 0-5m Launch
+    launch = df[df['x'] <= 5]
+    if not launch.empty:
+        buffer.write(f"Launch (0-5m),0-5m,0-{launch['t'].iloc[-1]:.3f}s,{launch['a'].mean():.2f} m/s²\n")
+    
+    # 5-10m Mid-track
+    mid = df[(df['x'] > 5) & (df['x'] <= 10)]
+    if not mid.empty:
+        buffer.write(f"Mid-Track (5-10m),5-10m,{mid['t'].iloc[0]:.3f}-{mid['t'].iloc[-1]:.3f}s,{mid['a'].mean():.2f} m/s²\n")
+    
+    # 10-15m
+    late = df[(df['x'] > 10) & (df['x'] <= 15)]
+    if not late.empty:
+        buffer.write(f"Late (10-15m),10-15m,{late['t'].iloc[0]:.3f}-{late['t'].iloc[-1]:.3f}s,{late['a'].mean():.2f} m/s²\n")
+    
+    # 15-20m Final
+    final = df[df['x'] > 15]
+    if not final.empty:
+        buffer.write(f"Final (15-20m),15-20m,{final['t'].iloc[0]:.3f}-{final['t'].iloc[-1]:.3f}s,{final['a'].mean():.2f} m/s²\n")
+    
+    # Force Analysis
+    buffer.write("\nFORCE ANALYSIS\n")
+    buffer.write("-" * 80 + "\n")
+    buffer.write("Metric,Value\n")
+    buffer.write(f"Peak CO₂ Thrust,{df['F_thrust'].max():.3f} N\n")
+    buffer.write(f"Average Drag Force,{df['F_drag'].mean():.3f} N\n")
+    buffer.write(f"Peak Drag Force,{df['F_drag'].max():.3f} N\n")
+    buffer.write(f"Rolling Resistance,{df['F_rolling'].iloc[0]:.3f} N (constant)\n")
+    buffer.write(f"Bearing Friction,{df['F_bearing'].iloc[0]:.3f} N (constant)\n")
+    buffer.write(f"Average Net Force,{df['F_net'].mean():.3f} N\n")
+    
+    # Energy Analysis
+    buffer.write("\nENERGY ANALYSIS\n")
+    buffer.write("-" * 80 + "\n")
+    final_v = df['v'].iloc[-1]
+    mass_kg = params_dict.get('mass_g', 50) / 1000
+    kinetic_energy = 0.5 * mass_kg * (final_v ** 2)
+    
+    # Calculate work done by each force
+    drag_work = (df['F_drag'] * df['v'] * 0.001).sum()  # Approximate work
+    rolling_work = (df['F_rolling'] * df['v'] * 0.001).sum()
+    thrust_work = (df['F_thrust'] * df['v'] * 0.001).sum()
+    
+    buffer.write(f"Final Kinetic Energy,{kinetic_energy:.3f} J\n")
+    buffer.write(f"Work by CO₂ Thrust,{thrust_work:.3f} J\n")
+    buffer.write(f"Work Lost to Drag,{drag_work:.3f} J\n")
+    buffer.write(f"Work Lost to Rolling,{rolling_work:.3f} J\n")
+    buffer.write(f"Efficiency,{(kinetic_energy/thrust_work*100):.1f}%\n")
+    
+    # Vehicle Configuration
+    buffer.write("\nVEHICLE CONFIGURATION\n")
+    buffer.write("-" * 80 + "\n")
+    buffer.write(f"Mass,{params_dict.get('mass_g', 0)} g\n")
+    buffer.write(f"Drag Coefficient,{params_dict.get('Cd', 0):.3f}\n")
+    buffer.write(f"Frontal Area,{params_dict.get('area_cm2', 0):.2f} cm²\n")
+    buffer.write(f"Wheel Diameter,{params_dict.get('wheel_diameter_mm', 0)} mm\n")
+    buffer.write(f"Bearing Quality,{params_dict.get('bearing_quality', 0)}/5\n")
+    buffer.write(f"Wheel Friction,{params_dict.get('wheel_friction', 0):.2f}×\n")
+    
+    # Propulsion System
+    buffer.write("\nPROPULSION SYSTEM\n")
+    buffer.write("-" * 80 + "\n")
+    buffer.write(f"Peak CO₂ Thrust,{params_dict.get('co2_thrust', 0):.1f} N @ 20°C\n")
+    buffer.write(f"Release Duration,{params_dict.get('co2_duration', 0):.2f} s\n")
+    buffer.write(f"Launch Technique,{params_dict.get('launch_technique', 'N/A')}\n")
+    buffer.write(f"Actual Thrust (temp adjusted),{params_dict.get('actual_thrust', 0):.2f} N\n")
+    
+    # Track Conditions
+    buffer.write("\nTRACK CONDITIONS\n")
+    buffer.write("-" * 80 + "\n")
+    buffer.write(f"Track Length,{params_dict.get('track_length_m', 0)} m\n")
+    buffer.write(f"Surface Type,{params_dict.get('surface', 'N/A')}\n")
+    buffer.write(f"Rolling Coefficient,{params_dict.get('Crr', 0):.4f}\n")
+    buffer.write(f"Temperature,{params_dict.get('temperature', 0):.1f} °C\n")
+    buffer.write(f"Air Pressure,{params_dict.get('pressure', 0):.2f} kPa\n")
+    buffer.write(f"Air Density,{params_dict.get('rho', 0):.4f} kg/m³\n")
+    
+    # Performance Insights
+    buffer.write("\nPERFORMANCE INSIGHTS\n")
+    buffer.write("-" * 80 + "\n")
+    
+    # Time to reach 50 km/h
+    time_50kmh = df[df['speed_kmh'] >= 50]['t'].iloc[0] if (df['speed_kmh'] >= 50).any() else None
+    if time_50kmh:
+        buffer.write(f"Time to 50 km/h,{time_50kmh:.3f} s\n")
+    
+    # Distance when acceleration drops below 5 m/s²
+    low_accel = df[df['a'] < 5]
+    if not low_accel.empty:
+        buffer.write(f"Distance at low acceleration (<5 m/s²),{low_accel['x'].iloc[0]:.2f} m\n")
+    
+    # Peak power
+    peak_power = (df['F_thrust'] * df['v']).max()
+    buffer.write(f"Peak Power Output,{peak_power:.2f} W\n")
+    
+    # Drag dominance point (where drag = 50% of thrust)
+    drag_dominant = df[df['F_drag'] >= df['F_thrust'] * 0.5]
+    if not drag_dominant.empty:
+        buffer.write(f"Drag Dominance Point,{drag_dominant['x'].iloc[0]:.2f} m at {drag_dominant['t'].iloc[0]:.3f} s\n")
+    
+    buffer.write("\n" + "=" * 80 + "\n")
+    buffer.write("END OF REPORT\n")
+    
     return buffer.getvalue().encode("utf-8")
 
 # ---------- Streamlit UI ----------
@@ -712,13 +846,34 @@ st.markdown("---")
 st.markdown("### 💾 Export Data")
 
 if df is not None and not df.empty:
-    csv_bytes = csv_bytes_from_df(df)
+    # Prepare params dict for export
+    export_params = {
+        'mass_g': mass_g,
+        'Cd': Cd,
+        'area_cm2': area_cm2,
+        'wheel_diameter_mm': wheel_diameter_mm,
+        'bearing_quality': bearing_quality,
+        'wheel_friction': wheel_friction,
+        'co2_thrust': co2_thrust,
+        'co2_duration': co2_duration,
+        'launch_technique': launch_technique,
+        'track_length_m': track_length_m,
+        'surface': surface,
+        'Crr': Crr,
+        'temperature': temperature,
+        'pressure': pressure,
+        'rho': rho,
+        'actual_thrust': actual_thrust
+    }
+    
+    csv_bytes = csv_bytes_from_df(df, export_params, finish_time)
     st.download_button(
-        "📥 Download Run Data (CSV)", 
+        "📥 Download Comprehensive Race Report (CSV)", 
         data=csv_bytes, 
-        file_name=f"neevo_run_{int(datetime.now().timestamp())}.csv", 
+        file_name=f"neevo_race_report_{int(datetime.now().timestamp())}.csv", 
         mime="text/csv"
     )
+    st.caption("Report includes: Performance metrics, split times, force analysis, energy calculations, and configuration details")
 
 # Save to history
 if st.session_state.get("save_run", False):
